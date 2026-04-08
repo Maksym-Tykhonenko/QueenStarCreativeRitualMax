@@ -23,7 +23,29 @@
 	<key>CFBundleSignature</key>
 	<string>????</string>
 	<key>CFBundleVersion</key>
-	<string>2</string>
+	<string>3</string>
+	<key>FacebookAppID</key>
+	<string>938207502386411</string>
+	<key>FacebookClientToken</key>
+	<string>de2c7198d5f7cf224c0a6e9a5f0cacaf</string>
+	<key>FacebookDisplayName</key>
+	<string>Queen of Creative Star Space</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>fb938207502386411</string>
+			</array>
+		</dict>
+	</array>
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>fbapi</string>
+		<string>fb-messenger-share-api</string>
+		<string>fbauth2</string>
+		<string>fbshareextension</string>
+	</array>
 	<key>NSAppTransportSecurity</key>
 	<dict>
 	    <key>NSAllowsArbitraryLoadsInWebContent</key>
@@ -51,6 +73,8 @@
 	<string>This app requires permission to save images to your photo library.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>This app requires access to your photo library to let you share images.</string>
+	<key>NSUserTrackingUsageDescription</key>
+	<string>To analyze the effectiveness of our marketing efforts and to improve the interaction with our users</string>
 	<key>RCTNewArchEnabled</key>
 	<true/>
 	<key>UIAppFonts</key>
