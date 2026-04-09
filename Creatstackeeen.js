@@ -179,8 +179,6 @@ const CryoRouteSpindle = () => {
         const uniqueId = await DeviceInfo.getUniqueId();
         setIdfv(uniqueId);
 
-        await fetchIdfa();
-        logActivateApp();
         //logTestEvent();
 
         gettingExtInfo();
@@ -190,6 +188,9 @@ const CryoRouteSpindle = () => {
           fetchAdServicesAttributionData(),
           requestOneSignallFoo(),
         ]);
+
+        await fetchIdfa();
+        logActivateApp();
 
         // Результати виконаних функцій
         console.log('Результати функцій:', results);
@@ -371,7 +372,7 @@ const CryoRouteSpindle = () => {
         return false;
       }
     } catch (err) {
-      setIdfa(null);
+      setIdfa('00000000-0000-0000-0000-000000000000');
 
       Settings.setAdvertiserTrackingEnabled(false);
 
@@ -604,11 +605,30 @@ const CryoRouteSpindle = () => {
   };
   console.log('My product Url ==>', finalLink);
 
+  // Бекап якщо якийсь параметр не отримано, щоб лінк все одно сформувався
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (!completeLink) {
+        console.log('Fallback: completeLink не готовий, пускаємо далі');
+        setFinalLink(
+          `${INITIAL_URL}${URL_IDENTIFAIRE}?${URL_IDENTIFAIRE}=1&idfa=${
+            idfa || '00000000-0000-0000-0000-000000000000'
+          }&idfv=${idfv || ''}&jthrhg=${timeStampUserId || ''}&oneSignalId=${
+            oneSignalId || ''
+          }&uid=${uid || ''}`,
+        );
+        setCompleteLink(true);
+      }
+    }, 12000);
+
+    return () => clearTimeout(timer);
+  }, [completeLink, idfa, idfv, timeStampUserId]);
+
   ///////// Route
   const Route = ({ isFatch }) => {
     if (!completeLink) {
       // Показуємо тільки лоудери, поки acceptTransparency і completeLink не true
-      return null;
+      return <ArcticBootVeil />;
     }
 
     if (isFatch) {

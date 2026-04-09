@@ -3,7 +3,7 @@ import { Settings, AppEventsLogger } from 'react-native-fbsdk-next';
 let isMetaInitialized = false;
 let hasLoggedActivate = false;
 
-const FACEBOOK_APP_ID = '938207502386411'; //<---- Replace with your actual Facebook App ID
+const FACEBOOK_APP_ID = '2117571838805733'; //<---- Replace with your actual Facebook App ID
 const FACEBOOK_APP_NAME = 'Queen of Creative Star Space'; //<---- Replace with your actual Facebook App Name
 
 export const initMetaSdk = () => {

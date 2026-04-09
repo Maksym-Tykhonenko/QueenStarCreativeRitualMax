@@ -23,11 +23,11 @@
 	<key>CFBundleSignature</key>
 	<string>????</string>
 	<key>CFBundleVersion</key>
-	<string>3</string>
+	<string>4</string>
 	<key>FacebookAppID</key>
-	<string>938207502386411</string>
+	<string>2117571838805733</string>
 	<key>FacebookClientToken</key>
-	<string>de2c7198d5f7cf224c0a6e9a5f0cacaf</string>
+	<string>2f26fccb0344d1cfd07bf52c082e4e50</string>
 	<key>FacebookDisplayName</key>
 	<string>Queen of Creative Star Space</string>
 	<key>CFBundleURLTypes</key>
@@ -35,7 +35,7 @@
 		<dict>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>fb938207502386411</string>
+				<string>fb2117571838805733</string>
 			</array>
 		</dict>
 	</array>
