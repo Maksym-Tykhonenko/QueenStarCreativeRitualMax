@@ -90,7 +90,7 @@ const CryoRouteSpindle = () => {
 
   const ONESIGNAL_KEY = `bbacdd45-2168-4461-9610-6b41e670f18b`;
 
-  const TARGET_DATA = new Date(2026, 2, 8, 8, 8, 0);
+  const TARGET_DATA = new Date(2026, 3, 11, 8, 8, 0);
 
   const FATCH_TO_OUR_BACK = `https://orbitfield.site/`;
 
